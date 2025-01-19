@@ -1,0 +1,73 @@
+﻿@using WebApplication1.Models.ViewModels;
+@model ChangeUserViewModel;
+@{
+    ViewData["Title"] = "Профиль";
+}
+
+<div class="bs-blog-wrapper">
+    <p>
+        <h1> Профиль</h1>
+        <form asp-controller="Account" asp-action="Profile" method="post" enctype="multipart/form-data">
+
+            <input type="hidden" asp-for="Id" />
+            <div class="mb-3">
+                <label for="Login" class="form-label">Логин</label>
+                <input type="text" class="form-control" id="Login" asp-for="Login">
+                <span asp-validation-for="Login" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label for="username" class="form-label">Имя пользователя</label>
+                <input type="text" class="form-control" id="author" asp-for="Username">
+                <span asp-validation-for="Username" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label for="Password" class="form-label">Пароль</label>
+                <div class="mb-3">
+                    <a asp-controller="Account" asp-action="ChangePassword" asp-route-id="@Model.Id" class="btn btn-primary">Изменить пароль</a>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="uploadedImage" class="form-label">Аватар</label>
+                <input type="file" class="form-control" id="uploadedImage" asp-for="Avatar" name="uploadedImage">
+                <img id="preview" style="max-width:200px; display:block;" />
+                @if (!string.IsNullOrEmpty(Model.Avatar))
+                {
+                    <p>Текущее изображение:</p>
+                    <img src="@Url.Content(Model.Avatar)" alt="Текущее изображение" style="max-width:200px" />
+                }
+                <span asp-validation-for="Avatar" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <button type="submit" class="btn btn-primary">Сохранить данные</button>
+            </div>
+        </form>
+    </p>
+    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <p style="color:red;">@ViewBag.ErrorMessage</p>
+    }
+</div>
+
+<div id="successModal" class="modal">
+    <div class="modal-body">
+        <p>Пароль успешно изменён</p>
+        <a asp-controller="Post" asp-action="Index" class="btn btn-primary">OK</a>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        @if (ViewBag.IsProfileChanged == true)
+        {
+            <text>
+
+                $(document).ready(function () {
+                    $("#successModal").modal({
+                        escapeClose: false,
+                        clickClose: false,
+                        showClose: false
+                    });
+                });
+            </text>
+        }
+    </script>
+}

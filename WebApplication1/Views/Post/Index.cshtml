@@ -1,0 +1,193 @@
+﻿@using Microsoft.EntityFrameworkCore;
+@using Microsoft.AspNetCore.Http
+@using WebApplication1.Models.ViewModels;
+@using WebApplication1.Models;
+@using WebApplication1.Models.Domain;
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
+
+
+
+<!--model List<PostViewModel>-->
+@{
+    var currentPageLink = ($"{ViewContext.HttpContext.Request.Scheme}://{ViewContext.HttpContext.Request.Host}{ViewContext.HttpContext.Request.Path}");
+    var currentHostLink = ($"{ViewContext.HttpContext.Request.Scheme}://{ViewContext.HttpContext.Request.Host}");
+}
+
+
+@if (ViewData.Count > 0)
+{
+    <div class="bs-card-box page-entry-title">
+            @{
+                var title = ViewData["month"] != null ? (Model.Posts[0].Created.ToString("MMMM")+ " " + ViewData["year"]) : ViewData["year"];
+                if (ViewData["month"] != null)
+                    title = Model.Posts[0].Created.ToString("MMMM") + " " + ViewData["year"];
+                else if (ViewData["year"] != null)
+                    title = ViewData["year"];
+                else if (ViewData["author"] != null)
+                    title = Model.Posts[0].AuthorName;
+            }
+            @if (title != null){
+                <h1 class="entry-title title mb-0">
+                @title
+                </h1>
+            }
+        <div class="bs-breadcrumb-section">
+            <div class="overlay">
+                <div class="container">
+                    <div class="row">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <div role="navigation" aria-label="Breadcrumbs" class="breadcrumb-trail breadcrumbs" itemprop="breadcrumb">
+                                    <ul class="breadcrumb trail-items" itemscope="" itemtype="http://schema.org/BreadcrumbList">
+                                        <meta name="numberOfItems" content="3">
+                                        <meta name="itemListOrder" content="Ascending">
+                                        <li itemprop="itemListElement breadcrumb-item" itemscope="" itemtype="http://schema.org/ListItem" class="trail-item breadcrumb-item  trail-begin">
+                                            <a href="@currentHostLink" rel="home" itemprop="item"><span itemprop="name">Публикации</span></a><meta itemprop="position" content="1">
+                                        </li>
+                                        @if (ViewData["year"] != null)
+                                        {
+                                            <li itemprop="itemListElement breadcrumb-item" itemscope="" itemtype="http://schema.org/ListItem" class="trail-item breadcrumb-item ">
+                                                <a href='@currentHostLink/?year=@ViewData["year"]' itemprop="item">
+                                                    <span itemprop="name">@ViewData["year"]</span>
+                                                </a><meta itemprop="position" content="2">
+                                            </li>
+                                        }
+                                        @if (ViewData["month"] != null)
+                                        {
+                                            <li itemprop="itemListElement breadcrumb-item" itemscope="" itemtype="http://schema.org/ListItem" class="trail-item breadcrumb-item  trail-end">
+                                                <span itemprop="name"><span itemprop="name">@Model.Posts[0].Created.ToString("MMMM") </span></span><meta itemprop="position" content="3">
+                                            </li>
+                                        }
+                                        @if (ViewData["search"] != null)
+                                        {
+                                            <li itemprop="itemListElement breadcrumb-item" itemscope="" itemtype="http://schema.org/ListItem" class="trail-item breadcrumb-item  trail-end">
+                                                <span itemprop="name">
+                                                    <span itemprop="name">
+                                                        Результаты поиска для: @ViewData["search"]
+                                                    </span>
+                                                </span>
+                                                <meta itemprop="position" content="2">
+                                            </li>
+                                        }
+                                        
+                                    </ul>
+                                </div>
+                            </ol>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+<div class="postContainer">
+@if(Model.Posts.Count > 0)
+{
+    foreach(var post in Model.Posts)
+    {
+        @if(!post.IsVisible && !User.IsInRole("Admin")) continue;
+        <!--<div class="card postCard">
+            <div class="card-body">
+                <img src="..." class="card-img-top" alt="...">
+                <h5 class="card-title">post.Name</h5>
+                <h6 class="card-subtitle mb-2 text-body-secondary">post.Author</h6>
+                <p class="card-text">Html.Raw(post.ShortDesciption)</p>
+                <a href="#" class="card-link">Подробнее</a>
+            </div>
+        </div>-->
+        <div class="col-md-12 fadeInDown wow" data-wow-delay="0.1s">
+            <div class="bs-blog-post list-blog">
+                @if (User.IsInRole("Admin"))
+                {
+                <div class="admin-buttons">
+                    @if(!post.IsVisible) 
+                    {
+                        <p>Публикация скрыта</p>
+                    }
+                    <a class="dropdown-item" asp-controller="Admin" asp-action="EditPost" asp-route-id="@post.Id"><i class="fa-solid fa-pen-to-square"></i></a>
+                    <a class="dropdown-item" asp-controller="Admin" asp-action="DeletePost" asp-route-id="@post.Id"><i class="fa-solid fa-trash"></i></a>
+                </div>
+                }
+                <div class="bs-blog-thumb lg back-img" style="background-image: url('@post.ImagePath');">
+                    <a asp-action="PostView" asp-controller="Post" asp-route-id="@post.Id" class="link-div"></a>
+                </div>
+                <article class="small col text-xs">
+                    <div class="bs-blog-category">
+                        <!--<a class="blogus-categories category-color-1" href="https://artagirov.ru/category/it/" alt="Просмотреть все записи в рубрике «Информационные технологии»">
+                            Информационные технологии
+                        </a><a class="blogus-categories category-color-1" href="https://artagirov.ru/category/info/" alt="Просмотреть все записи в рубрике «Информация»">
+                            Информация
+                            </a>-->
+                    </div>
+                        <h4 class="title"><a asp-action="PostView" asp-controller="Post" asp-route-id="@post.Id">@post.Name</a></h4>
+                    <div class="bs-blog-meta">
+                            <span class="bs-author"><a class="auth" asp-action="Index" asp-controller="Post" asp-route-author="@post.AuthorID"> <img src="@post.Avatar" class="gravatar avatar avatar-150 um-avatar um-avatar-uploaded" width="150" height="150" alt="" data-default="https://artagirov.ru/wp-content/plugins/ultimate-member/assets/img/default_avatar.jpg" onerror="if ( ! this.getAttribute('data-load-error') ){ this.setAttribute('data-load-error', '1');this.setAttribute('src', this.getAttribute('data-default'));}" loading="lazy">@post.AuthorName</a> </span>
+                        <span class="bs-blog-date">
+                            <a asp-action="Index" asp-controller="Post" asp-route-month="@post.Created.Month" asp-route-year="@post.Created.Year">
+                                @post.Created.ToString("d MMMM yyyy") 
+                            </a>
+                        </span>
+                        <!--<span class="comments-link"> <a href="https://artagirov.ru/2024/05/04/%d0%bd%d0%b0%d0%ba%d0%b8%d0%bf%d0%b5%d0%bb%d0%be-%d0%b1%d0%be%d0%bb%d1%8c-%d0%bc%d0%b0%d1%81%d1%82%d0%b5%d1%80%d0%b0/">0 Комментарии</a> </span>-->
+                    </div>
+
+                        <p>@Html.Raw(post.ShortDescription)</p>
+                </article>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <h1>Посты не найдены</h1>
+}
+</div>
+@{
+    var totalPages = Model.TotalPages;
+    var currentPage = Model.CurrentPage;
+    var startPage = Model.StartPage;
+    var endPage = Model.EndPage;
+}
+<!-- Навигация по страницам -->
+@if (totalPages > 1)
+{
+    <div class="pagination-nav" aria-label="Page navigation">
+        <ul class="pagination">
+            <!-- Кнопка "Первая страница" -->
+            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                <a class="page-link" href="@Url.Action("Index", new { page = 1 })" aria-label="First">
+                    <span aria-hidden="true">&laquo;</span> <!-- Стрелка для первой страницы -->
+                </a>
+            </li>
+
+            <!-- Кнопка "Предыдущая" -->
+            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                <a class="page-link" href="@Url.Action("Index", new { page = currentPage - 1 })" aria-label="Previous">
+                    <span aria-hidden="true">&lt;</span> <!-- Стрелка для предыдущей страницы -->
+                </a>
+            </li>
+
+            <!-- Отображение номеров страниц -->
+            @for (int i = startPage; i <= endPage; i++)
+            {
+                <li class="page-item @(i == currentPage ? "active" : "")">
+                    <a class="page-link" href="@Url.Action("Index", new { page = i })">@i</a>
+                </li>
+            }
+
+            <!-- Кнопка "Следующая" -->
+            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                <a class="page-link" href="@Url.Action("Index", new { page = currentPage + 1 })" aria-label="Next">
+                    <span aria-hidden="true">&gt;</span> <!-- Стрелка для следующей страницы -->
+                </a>
+            </li>
+
+            <!-- Кнопка "Последняя страница" -->
+            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                <a class="page-link" href="@Url.Action("Index", new { page = totalPages })" aria-label="Last">
+                    <span aria-hidden="true">&raquo;</span> <!-- Стрелка для последней страницы -->
+                </a>
+            </li>
+        </ul>
+    </div>
+}

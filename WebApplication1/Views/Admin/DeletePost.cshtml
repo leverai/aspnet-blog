@@ -1,0 +1,29 @@
+﻿<!--model WebApplication1.Models.ViewModels.PostViewModel-->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Удалить публикацию</title>
+</head>
+<body>
+    <div class="bs-blog-wrapper">
+        <h1>Вы уверены, что хотите удалить эту публикацию?</h1>
+        <p>
+            <strong>Название:</strong> @Model.Name
+        </p>
+        <p>
+            <strong>Автор:</strong> @Model.AuthorName
+        </p>
+        <p>
+            <strong>Короткое описание:</strong> @Html.Raw(@Model.ShortDescription)
+        </p>
+        <p>
+        <form asp-action="DeletePostConfirmed" asp-controller="Admin" method="post">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button type="submit" class="btn btn-danger">Удалить</button>
+            <a href="@Url.Action("Index", "Post")" class="btn btn-secondary">Отмена</a>
+        </form>
+        </p>
+    </div>
+</body>
+</html>

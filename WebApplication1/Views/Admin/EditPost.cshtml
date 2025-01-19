@@ -1,0 +1,184 @@
+﻿@using WebApplication1.Models.Domain;
+@model Post;
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/froala-editor/3.1.0/css/froala_style.min.css" rel="stylesheet" type="text/css" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/froala-editor/3.1.0/css/froala_editor.pkgd.min.css" rel="stylesheet" type="text/css" />
+<link href="https://cdn.jsdelivr.net/npm/froala-editor@latest/css/plugins/image.min.css" rel="stylesheet" type="text/css" />
+
+<div class="bs-blog-wrapper">
+    <h1> Редактирование статьи</h1>
+    <form asp-controller="Admin" asp-action="EditPost" method="post" enctype="multipart/form-data">
+   
+        <input type="hidden" asp-for="Id" />
+        <div class="mb-3">
+            <label for="name" class="form-label">Название статьи</label>
+            <input type="text" class="form-control" id="name" asp-for="Name">
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+        <div class="mb-3 hidden">
+            <label for="author" class="form-label">Автор</label>
+            <input type="text" class="form-control" id="author" asp-for="AuthorID">
+            <span asp-validation-for="AuthorID" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label for="ImagePath" class="form-label">Иллюстрация публикации</label>
+            <input type="file" class="form-control" id="ImagePath" asp-for="ImagePath" name="uploadedImage">
+            <img id="preview" style="max-width:200px; display:block;" />
+            @if (!string.IsNullOrEmpty(Model.ImagePath))
+            {
+                <p>Текущее изображение:</p>
+                <img src="@Url.Content(Model.ImagePath)" alt="Текущее изображение" style="max-width:200px" />
+            }
+       
+            <span asp-validation-for="ImagePath" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label for="shortDescription" class="form-label">Краткое описание статьи</label>
+            <input type="text" class="form-control" id="shortDescription" asp-for="ShortDescription">
+            <span asp-validation-for="ShortDescription" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">Текст статьи</label>
+            <textarea id="description" asp-for="Description"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="isVisible" value="true" asp-for="IsVisible">
+            <label for="isVisible" class="form-check-label">Видимость</label>
+        </div>
+
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">Сохранить публикацию</button>
+        </div>
+    </form>
+</div>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/froala-editor@latest/js/froala_editor.pkgd.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/froala-editor@latest/js/plugins/image.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/froala-editor@latest/js/languages/ru.js"></script>
+<script>
+    window.onload = function () {
+        tinymce.init({
+            selector: '#description',
+            license_key: 'gpl',
+            language: 'ru',
+            plugins: 'image link table',
+            images_upload_url: '/api/Image/UploadImage',
+            // toolbar: 'image',
+            toolbar: 'undo redo | styles | bold italic | alignleft aligncenter alignright alignjustify | outdent indent | link image table',
+            image_caption: true,
+            image_advtab: true,
+            image_uploadtab: true,
+            automatic_uploads: true,
+            paste_data_images: true,
+            debug: true,
+            setup: function (editor) {
+                editor.on('change', function () {
+                    editor.save();
+                });
+                editor.on('paste', function (e) {
+                    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                    for (const item of items) {
+                        if (item.type.indexOf('image') === 0) {
+                            const file = item.getAsFile();
+                            if (file) {
+                                e.preventDefault();
+                                uploadImage(file, editor);
+                            }
+                        }
+                    }
+                });
+                // Отслеживаем изменения в редакторе
+                editor.on('NodeChange', function (e) {
+                    handleImageRemoval(editor);
+                });
+
+                // Обработка кнопок удаления
+                editor.on('keydown', function (e) {
+                    if (e.key === 'Backspace' || e.key === 'Delete') {
+                        setTimeout(function () {
+                            handleImageRemoval(editor);
+                        }, 0); // Задержка для захвата DOM после удаления
+                    }
+                });
+            },
+            
+        });
+        // Функция загрузки изображения на сервер
+        function uploadImage(file, editor) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/Image/UploadImage', true);
+
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response && response.location) {
+                        // Вставить URL изображения в редактор
+                        editor.insertContent(`<img src="${response.location}" alt="Изображение"/>`);
+                    } else {
+                        console.error('Некорректный ответ сервера:', response);
+                    }
+                } else {
+                    console.error('Ошибка загрузки изображения:', xhr.statusText);
+                }
+            };
+
+            xhr.onerror = function () {
+                console.error('Ошибка сети при загрузке изображения.');
+            };
+
+            xhr.send(formData);
+        }
+        // Функция обработки удаления изображения
+        function handleImageRemoval(editor) {
+            // Находим все изображения в редакторе
+            const imagesInEditor = Array.from(editor.getBody().querySelectorAll('img')).map(img => img.src);
+
+            // Удаляем изображения, которых больше нет в редакторе
+            const allTrackedImages = window.trackedImages || [];
+            const removedImages = allTrackedImages.filter(imgUrl => !imagesInEditor.includes(imgUrl));
+
+            removedImages.forEach(imgUrl => {
+                deleteImageFromServer(imgUrl);
+            });
+
+            // Обновляем список текущих изображений
+            window.trackedImages = imagesInEditor;
+        }
+
+        // Удаление изображения с сервера
+        function deleteImageFromServer(imgUrl) {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/Image/DeleteImage', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    console.log('Изображение удалено:', imgUrl);
+                } else {
+                    console.error('Ошибка при удалении изображения:', xhr.statusText);
+                }
+            };
+
+            xhr.onerror = function () {
+                console.error('Ошибка сети при удалении изображения:', imgUrl);
+            };
+
+            xhr.send(JSON.stringify({ imageUrl: imgUrl }));
+        }
+    }
+
+    document.querySelector('input[type="file"]').addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                document.getElementById('preview').src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+</script>

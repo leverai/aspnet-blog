@@ -1,0 +1,32 @@
+﻿@using WebApplication1.Models.Domain;
+@model User
+@{
+    ViewData["Title"] = "Вход";
+}
+<div class="login-form">
+    <div class="bs-blog-wrapper">
+        <div class="bs-header">
+            <h2>Авторизация</h2>
+        </div>
+        <article class="small single">
+            <form method="post" asp-controller="Account" asp-action="Login">
+                <div class="mb-3">
+                    <label for="login" class="form-label">Логин:</label>
+                    <input type="text" class="form-control" id="login" name="Login" asp-for="Login" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Пароль:</label>
+                    <input type="password" class="form-control" id="password" name="Password" asp-for="Password" required>
+                </div>
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-primary">Войти</button>
+                </div>
+            </form>
+
+            @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+            {
+                <p style="color:red;">@ViewBag.ErrorMessage</p>
+            }
+        </article>
+    </div>
+</div>
